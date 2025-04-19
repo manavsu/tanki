@@ -1,11 +1,14 @@
 use color_eyre::Result;
-use crossterm::event::KeyEvent;
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::prelude::Rect;
 use serde::{Deserialize, Serialize};
-use tokio::sync::mpsc;
-use tracing::{debug, info};
 
-use crate::tui::{Event, Tui};
+use tanki::action::Action;
+use tanki::components::component::Component;
+use tanki::components::home::Home;
+use tanki::tui::{Event, Tui};
+use tokio::sync::mpsc;
+use tracing::debug;
 
 pub struct App {
     tick_rate: f64,
@@ -28,22 +31,24 @@ pub enum Mode {
 impl App {
     pub fn new() -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        Ok(Self { tick_rate, frame_rate, should_quit: false, should_suspend: false, mode: Mode::Home, last_tick_key_events: Vec::new(), action_tx, action_rx })
+        Ok(Self {
+            tick_rate: 60.into(),
+            frame_rate: 60.into(),
+            components: Vec::new(),
+            should_quit: false,
+            should_suspend: false,
+            mode: Mode::Home,
+            last_tick_key_events: Vec::new(),
+            action_tx,
+            action_rx,
+        })
     }
 
     pub async fn run(&mut self) -> Result<()> {
         let mut tui = Tui::new()?.mouse(true).tick_rate(self.tick_rate).frame_rate(self.frame_rate);
         tui.enter()?;
 
-        for component in self.components.iter_mut() {
-            component.register_action_handler(self.action_tx.clone())?;
-        }
-        for component in self.components.iter_mut() {
-            component.register_config_handler(self.config.clone())?;
-        }
-        for component in self.components.iter_mut() {
-            component.init(tui.size()?)?;
-        }
+        self.components.push(Box::new(Home::new(self.action_tx.clone())));
 
         let action_tx = self.action_tx.clone();
         loop {
@@ -53,7 +58,6 @@ impl App {
                 tui.suspend()?;
                 action_tx.send(Action::Resume)?;
                 action_tx.send(Action::ClearScreen)?;
-                // tui.mouse(true);
                 tui.enter()?;
             } else if self.should_quit {
                 tui.stop()?;
@@ -86,26 +90,14 @@ impl App {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
-        let action_tx = self.action_tx.clone();
-        let Some(keymap) = self.config.keybindings.get(&self.mode) else {
-            return Ok(());
-        };
-        match keymap.get(&vec![key]) {
-            Some(action) => {
-                info!("Got action: {action:?}");
-                action_tx.send(action.clone())?;
+        match key.code {
+            KeyCode::Char('q') => {
+                self.action_tx.send(Action::Quit).ok();
             }
-            _ => {
-                // If the key was not handled as a single key action,
-                // then consider it for multi-key combinations.
-                self.last_tick_key_events.push(key);
-
-                // Check for multi-key combinations
-                if let Some(action) = keymap.get(&self.last_tick_key_events) {
-                    info!("Got action: {action:?}");
-                    action_tx.send(action.clone())?;
-                }
+            KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
+                self.action_tx.send(Action::Quit).ok();
             }
+            _ => {}
         }
         Ok(())
     }

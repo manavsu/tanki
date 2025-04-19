@@ -1,4 +1,3 @@
-use clap::Parser;
 use color_eyre::Result;
 
 use crate::app::App;
