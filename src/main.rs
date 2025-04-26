@@ -1,8 +1,6 @@
 use color_eyre::Result;
 
-use crate::app::App;
-
-mod app;
+use tanki::app::App;
 
 #[tokio::main]
 async fn main() -> Result<()> {

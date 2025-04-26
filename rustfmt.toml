@@ -1,5 +1,7 @@
-max_width = 200
+max_width = 150
 use_small_heuristics = "Max"
 group_imports = "StdExternalCrate"
 fn_single_line = true
 skip_children = true
+imports_layout = "Horizontal"
+import_grammar = "Module"

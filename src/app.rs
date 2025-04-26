@@ -1,55 +1,35 @@
 use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::prelude::Rect;
-use serde::{Deserialize, Serialize};
-
-use tanki::action::Action;
-use tanki::components::component::Component;
-use tanki::components::home::Home;
-use tanki::tui::{Event, Tui};
+use ratatui::layout::Rect;
 use tokio::sync::mpsc;
 use tracing::debug;
+
+use crate::{
+    action::Action,
+    components::{base::Base, component::Component},
+    tui::{Event, Tui},
+};
 
 pub struct App {
     tick_rate: f64,
     frame_rate: f64,
-    components: Vec<Box<dyn Component>>,
+    app: Base,
     should_quit: bool,
     should_suspend: bool,
-    mode: Mode,
     last_tick_key_events: Vec<KeyEvent>,
     action_tx: mpsc::UnboundedSender<Action>,
     action_rx: mpsc::UnboundedReceiver<Action>,
 }
 
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum Mode {
-    #[default]
-    Home,
-}
-
 impl App {
     pub fn new() -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        Ok(Self {
-            tick_rate: 60.into(),
-            frame_rate: 60.into(),
-            components: Vec::new(),
-            should_quit: false,
-            should_suspend: false,
-            mode: Mode::Home,
-            last_tick_key_events: Vec::new(),
-            action_tx,
-            action_rx,
-        })
+        Ok(Self { tick_rate: 60.into(), frame_rate: 60.into(), app: Base::new(action_tx.clone()), should_quit: false, should_suspend: false, last_tick_key_events: Vec::new(), action_tx, action_rx })
     }
 
     pub async fn run(&mut self) -> Result<()> {
         let mut tui = Tui::new()?.mouse(true).tick_rate(self.tick_rate).frame_rate(self.frame_rate);
         tui.enter()?;
-
-        self.components.push(Box::new(Home::new(self.action_tx.clone())));
-
         let action_tx = self.action_tx.clone();
         loop {
             self.handle_events(&mut tui).await?;
@@ -81,10 +61,15 @@ impl App {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for component in self.components.iter_mut() {
-            if let Some(action) = component.handle_events(Some(event.clone()))? {
-                action_tx.send(action)?;
-            }
+
+        let action = match event {
+            Event::Key(key_event) => self.app.handle_key_event(key_event)?,
+            Event::Mouse(mouse_event) => self.app.handle_mouse_event(mouse_event)?,
+            _ => None,
+        };
+
+        if let Some(action) = action {
+            action_tx.send(action)?;
         }
         Ok(())
     }
@@ -119,11 +104,10 @@ impl App {
                 Action::Render => self.render(tui)?,
                 _ => {}
             }
-            for component in self.components.iter_mut() {
-                if let Some(action) = component.update(action.clone())? {
-                    self.action_tx.send(action)?
-                };
-            }
+
+            if let Some(action) = self.app.update(action.clone())? {
+                self.action_tx.send(action)?
+            };
         }
         Ok(())
     }
@@ -136,10 +120,8 @@ impl App {
 
     fn render(&mut self, tui: &mut Tui) -> Result<()> {
         tui.draw(|frame| {
-            for component in self.components.iter_mut() {
-                if let Err(err) = component.draw(frame, frame.area()) {
-                    let _ = self.action_tx.send(Action::Error(format!("Failed to draw: {:?}", err)));
-                }
+            if let Err(err) = self.app.draw(frame, frame.area()) {
+                let _ = self.action_tx.send(Action::Error(format!("Failed to draw: {:?}", err)));
             }
         })?;
         Ok(())

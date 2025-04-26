@@ -48,16 +48,19 @@ impl Component for Home {
     }
 
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let items = vec![ListItem::new(""), ListItem::new("Option 2"), ListItem::new("Option 3")];
+        // let decks = collection.decks.iter().map(|deck| ListItem::new(deck.name.clone())).collect::<Vec<_>>();
+        let items = vec![ListItem::new("+ option q"), ListItem::new("+ Option 2"), ListItem::new("+ Option 3"), ListItem::new("+")];
         self.num_options = items.len();
 
+        let chunks = Layout::vertical([Constraint::Length(6), Constraint::Min(0)]).margin(1).split(area);
+
+        let title = Text::from(get_logo()).add_modifier(Modifier::BOLD);
+        frame.render_widget(title, chunks[0]);
         let list = List::new(items)
             .block(Block::bordered())
             .highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
-            .repeat_highlight_symbol(true)
             .direction(ListDirection::TopToBottom);
-
-        frame.render_stateful_widget(list, area, &mut self.state);
+        frame.render_stateful_widget(list, chunks[1], &mut self.state);
         Ok(())
     }
 }
@@ -74,6 +77,18 @@ fn update_list_selection(key_code: KeyCode, state: &mut ListState, num_options: 
         KeyCode::Down => {
             state.select(Some(state.selected().unwrap().wrapping_add(1) % num_options));
         }
+        KeyCode::Char('a') => {}
         _ => {}
     }
+}
+
+fn get_logo() -> String {
+    String::from(
+        "████████╗ █████╗ ███╗  ██╗██╗  ██╗██╗
+╚══██╔══╝██╔══██╗████╗ ██║██║ ██╔╝██║
+   ██║   ███████║██╔██╗██║█████═╝ ██║
+   ██║   ██╔══██║██║╚████║██╔═██╗ ██║
+   ██║   ██║  ██║██║ ╚███║██║ ╚██╗██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚══╝╚═╝  ╚═╝╚═╝",
+    )
 }
