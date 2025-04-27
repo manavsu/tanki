@@ -35,4 +35,5 @@ tokio-util = "0.7.14"
 tracing = "0.1.41"
 tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "serde"] }
+uuid = { version = "1.16.0", features = ["serde", "v4"] }
 vergen-gix = { version = "1.0.9", features = ["build", "cargo"] }

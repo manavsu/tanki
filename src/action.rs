@@ -1,7 +1,8 @@
-use serde::{Deserialize, Serialize};
 use strum::Display;
 
-#[derive(Debug, Clone, PartialEq, Eq, Display, Serialize, Deserialize)]
+use crate::components::home;
+
+#[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum Action {
     Tick,
     Render,

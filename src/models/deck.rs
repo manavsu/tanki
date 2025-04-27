@@ -1,19 +1,21 @@
 use serde::Deserialize;
 use serde::Serialize;
+use uuid::Uuid;
 
 use crate::models::card::Card;
 use crate::models::note::Note;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 pub struct Deck {
-    pub(crate) name: String,
-    pub(crate) subdecks: Vec<Deck>,
-    pub(crate) notes: Vec<Note>,
+    pub name: String,
+    pub uuid: Uuid,
+    subdecks: Vec<Deck>,
+    notes: Vec<Note>,
 }
 
 impl Deck {
     pub fn new(name: String) -> Self {
-        Deck { name, subdecks: Vec::new(), notes: Vec::new() }
+        Deck { name, subdecks: Vec::new(), notes: Vec::new(), uuid: Uuid::new_v4() }
     }
 
     pub fn add_subdeck(&mut self, deck: Deck) {
@@ -70,7 +72,7 @@ mod tests {
         deck.add_card(note);
 
         assert_eq!(deck.notes.len(), 1);
-        assert_eq!(deck.notes[0].front, "Front");
+        assert_eq!(deck.notes[0].get_cards()[0].front, "Front");
     }
 
     #[test]

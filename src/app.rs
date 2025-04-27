@@ -76,9 +76,6 @@ impl App {
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
         match key.code {
-            KeyCode::Char('q') => {
-                self.action_tx.send(Action::Quit).ok();
-            }
             KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
                 self.action_tx.send(Action::Quit).ok();
             }

@@ -4,15 +4,20 @@ use crate::{action::Action, components::component::Component};
 
 use super::home::Home;
 
+pub enum Screen {
+    Home,
+}
+
 pub struct Base {
     tx: UnboundedSender<Action>,
     home: Home,
+    screen: Screen,
 }
 
 impl Base {
     pub fn new(tx: UnboundedSender<Action>) -> Self {
         let tx_clone = tx.clone();
-        Self { tx, home: Home::new(tx_clone.clone()) }
+        Self { tx, home: Home::new(tx_clone.clone()), screen: Screen::Home }
     }
 }
 
@@ -30,6 +35,8 @@ impl Component for Base {
     }
 
     fn draw(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) -> color_eyre::eyre::Result<()> {
-        self.home.draw(frame, area)
+        match self.screen {
+            Screen::Home => self.home.draw(frame, area),
+        }
     }
 }

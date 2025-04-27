@@ -3,11 +3,11 @@ use serde::Serialize;
 
 use crate::models::card::Card;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 pub struct Note {
-    pub(crate) front: String,
-    pub(crate) back: String,
-    pub(crate) note_type: NoteType,
+    front: String,
+    back: String,
+    note_type: NoteType,
 }
 
 impl Note {
@@ -23,7 +23,7 @@ impl Note {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 pub enum NoteType {
     Basic,
     BasicAndReverse,
