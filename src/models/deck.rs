@@ -26,7 +26,7 @@ impl Deck {
         self.notes.push(card);
     }
 
-    pub(crate) fn get_cards(&self) -> Vec<Card> {
+    pub fn get_cards(&self) -> Vec<Card> {
         self.notes.iter().flat_map(|n| n.get_cards()).collect()
     }
 
@@ -34,8 +34,24 @@ impl Deck {
         self.subdecks.iter().flat_map(|d| d.get_all_cards()).chain(self.get_cards()).collect()
     }
 
-    pub fn get_subdecks(&self) -> &Vec<Deck> {
+    pub fn get_subdecks(&self) -> &[Deck] {
         &self.subdecks
+    }
+
+    pub fn get_all_subdecks(&self) -> Vec<&Deck> {
+        self.subdecks.iter().flat_map(|d| d.get_all_subdecks()).chain(self.get_subdecks()).collect()
+    }
+
+    pub fn find_deck_mut(&mut self, uuid: Uuid) -> Option<&mut Deck> {
+        if self.uuid == uuid {
+            return Some(self);
+        }
+        for subdeck in &mut self.subdecks {
+            if let Some(deck) = subdeck.find_deck_mut(uuid) {
+                return Some(deck);
+            }
+        }
+        None
     }
 }
 

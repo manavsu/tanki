@@ -14,20 +14,26 @@ impl Collection {
     pub fn new() -> Self {
         Collection { decks: Vec::new(), uuid: uuid::Uuid::new_v4() }
     }
+
     pub fn add_deck(&mut self, deck: Deck) {
         self.decks.push(deck);
     }
 
-    pub fn add_deck_to(&mut self, uuid: Uuid, deck: Deck) {
-        if let Some(existing_deck) = self.decks.iter_mut().find(|d| d.uuid == uuid) {
-            existing_deck.add_subdeck(deck);
-        } else {
-            self.decks.push(deck);
+    pub fn find_deck_mut(&mut self, uuid: Uuid) -> Option<&mut Deck> {
+        for deck in &mut self.decks {
+            if let Some(found) = deck.find_deck_mut(uuid) {
+                return Some(found);
+            }
         }
+        None
     }
 
-    pub fn get_deck(&self, uuid: Uuid) -> Option<&Deck> {
-        self.decks.iter().find(|d| d.uuid == uuid)
+    pub fn get_decks(&self) -> &[Deck] {
+        &self.decks
+    }
+
+    pub fn get_all_decks(&self) -> Vec<&Deck> {
+        self.decks.iter().flat_map(|d| d.get_all_subdecks()).chain(self.get_decks()).collect()
     }
 }
 

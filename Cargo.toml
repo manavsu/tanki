@@ -33,6 +33,7 @@ strum = { version = "0.27.1", features = ["derive"] }
 tokio = { version = "1.44.2", features = ["full"] }
 tokio-util = "0.7.14"
 tracing = "0.1.41"
+tracing-appender = "0.2.3"
 tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "serde"] }
 uuid = { version = "1.16.0", features = ["serde", "v4"] }
