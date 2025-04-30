@@ -5,9 +5,9 @@ use crate::models::card::Card;
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
 pub struct Note {
-    front: String,
-    back: String,
-    note_type: NoteType,
+    pub front: String,
+    pub back: String,
+    pub note_type: NoteType,
 }
 
 impl Note {
@@ -18,7 +18,9 @@ impl Note {
     pub fn get_cards(&self) -> Vec<Card> {
         match self.note_type {
             NoteType::Basic => vec![Card { front: self.front.clone(), back: self.back.clone() }],
-            NoteType::BasicAndReverse => vec![Card { front: self.front.clone(), back: self.back.clone() }, Card { front: self.back.clone(), back: self.front.clone() }],
+            NoteType::BasicAndReverse => {
+                vec![Card { front: self.front.clone(), back: self.back.clone() }, Card { front: self.back.clone(), back: self.front.clone() }]
+            }
         }
     }
 }

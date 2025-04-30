@@ -19,9 +19,26 @@ impl Collection {
         self.decks.push(deck);
     }
 
+    pub fn add_deck_to(&mut self, uuid: Uuid, deck: Deck) {
+        if let Some(found_deck) = self.find_deck_mut(uuid) {
+            found_deck.add_subdeck(deck);
+        } else {
+            self.add_deck(deck);
+        } 
+    }
+
     pub fn find_deck_mut(&mut self, uuid: Uuid) -> Option<&mut Deck> {
         for deck in &mut self.decks {
             if let Some(found) = deck.find_deck_mut(uuid) {
+                return Some(found);
+            }
+        }
+        None
+    }
+
+    pub fn find_deck(&self, uuid: Uuid) -> Option<&Deck> {
+        for deck in &self.decks {
+            if let Some(found) = deck.find_deck(uuid) {
                 return Some(found);
             }
         }

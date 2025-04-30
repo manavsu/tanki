@@ -11,27 +11,40 @@ pub struct Deck {
     pub uuid: Uuid,
     subdecks: Vec<Deck>,
     notes: Vec<Note>,
+    parent: Option<String>,
 }
 
 impl Deck {
     pub fn new(name: String) -> Self {
-        Deck { name, subdecks: Vec::new(), notes: Vec::new(), uuid: Uuid::new_v4() }
+        Deck { name, subdecks: Vec::new(), notes: Vec::new(), uuid: Uuid::new_v4(), parent: None }
     }
 
-    pub fn add_subdeck(&mut self, deck: Deck) {
+    pub fn qualified_name(&self) -> String {
+        match self.parent {
+            Some(ref parent_name) => format!("{}:{}", parent_name, self.name),
+            None => self.name.clone(),
+        }
+    }
+
+    pub fn add_subdeck(&mut self, mut deck: Deck) {
+        deck.parent = Some(self.qualified_name());
         self.subdecks.push(deck);
     }
 
-    pub fn add_card(&mut self, card: Note) {
+    pub fn add_note(&mut self, card: Note) {
         self.notes.push(card);
     }
 
-    pub fn get_cards(&self) -> Vec<Card> {
+    pub(crate) fn get_cards(&self) -> Vec<Card> {
         self.notes.iter().flat_map(|n| n.get_cards()).collect()
     }
 
     pub fn get_all_cards(&self) -> Vec<Card> {
         self.subdecks.iter().flat_map(|d| d.get_all_cards()).chain(self.get_cards()).collect()
+    }
+
+    pub fn get_notes(&self) -> &[Note] {
+        &self.notes
     }
 
     pub fn get_subdecks(&self) -> &[Deck] {
@@ -48,6 +61,18 @@ impl Deck {
         }
         for subdeck in &mut self.subdecks {
             if let Some(deck) = subdeck.find_deck_mut(uuid) {
+                return Some(deck);
+            }
+        }
+        None
+    }
+
+    pub fn find_deck(&self, uuid: Uuid) -> Option<&Deck> {
+        if self.uuid == uuid {
+            return Some(self);
+        }
+        for subdeck in &self.subdecks {
+            if let Some(deck) = subdeck.find_deck(uuid) {
                 return Some(deck);
             }
         }
@@ -85,7 +110,7 @@ mod tests {
         let mut deck = Deck::new("Test Deck".to_string());
         let note = Note::new("Front".to_string(), "Back".to_string(), NoteType::Basic);
 
-        deck.add_card(note);
+        deck.add_note(note);
 
         assert_eq!(deck.notes.len(), 1);
         assert_eq!(deck.notes[0].get_cards()[0].front, "Front");
@@ -94,8 +119,8 @@ mod tests {
     #[test]
     fn test_get_cards() {
         let mut deck = Deck::new("Test Deck".to_string());
-        deck.add_card(Note::new("Q1".to_string(), "A1".to_string(), NoteType::Basic));
-        deck.add_card(Note::new("Q2".to_string(), "A2".to_string(), NoteType::BasicAndReverse));
+        deck.add_note(Note::new("Q1".to_string(), "A1".to_string(), NoteType::Basic));
+        deck.add_note(Note::new("Q2".to_string(), "A2".to_string(), NoteType::BasicAndReverse));
 
         let cards = deck.get_cards();
 
@@ -108,8 +133,8 @@ mod tests {
         let mut parent_deck = Deck::new("Parent".to_string());
         let mut child_deck = Deck::new("Child".to_string());
 
-        parent_deck.add_card(Note::new("PQ".to_string(), "PA".to_string(), NoteType::Basic));
-        child_deck.add_card(Note::new("CQ".to_string(), "CA".to_string(), NoteType::Basic));
+        parent_deck.add_note(Note::new("PQ".to_string(), "PA".to_string(), NoteType::Basic));
+        child_deck.add_note(Note::new("CQ".to_string(), "CA".to_string(), NoteType::Basic));
         parent_deck.add_subdeck(child_deck);
 
         let all_cards = parent_deck.get_all_cards();
