@@ -6,7 +6,7 @@ use tracing::debug;
 
 use crate::{
     action::Action,
-    components::{base::Base, component::Component},
+    components::base::Base,
     tui::{Event, Tui},
 };
 
@@ -24,7 +24,16 @@ pub struct App {
 impl App {
     pub fn new() -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
-        Ok(Self { tick_rate: 60.into(), frame_rate: 60.into(), app: Base::new(action_tx.clone()), should_quit: false, should_suspend: false, last_tick_key_events: Vec::new(), action_tx, action_rx })
+        Ok(Self {
+            tick_rate: 60.into(),
+            frame_rate: 60.into(),
+            app: Base::new(action_tx.clone()),
+            should_quit: false,
+            should_suspend: false,
+            last_tick_key_events: Vec::new(),
+            action_tx,
+            action_rx,
+        })
     }
 
     pub async fn run(&mut self) -> Result<()> {

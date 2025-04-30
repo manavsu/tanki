@@ -1,3 +1,3 @@
-pub mod component;
-pub mod home;
 pub mod base;
+
+pub mod home_screen;

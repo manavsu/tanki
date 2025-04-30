@@ -1,8 +1,11 @@
+use color_eyre::eyre::Result;
+use crossterm::event;
 use tokio::sync::mpsc::UnboundedSender;
+use tracing::info;
 
-use crate::{action::Action, components::component::Component};
+use crate::action::Action;
 
-use super::home::Home;
+use super::home_screen::HomeScreen;
 
 pub enum Screen {
     Home,
@@ -10,31 +13,62 @@ pub enum Screen {
 
 pub struct Base {
     tx: UnboundedSender<Action>,
-    home: Home,
+    home: HomeScreen,
     screen: Screen,
 }
 
 impl Base {
     pub fn new(tx: UnboundedSender<Action>) -> Self {
         let tx_clone = tx.clone();
-        Self { tx, home: Home::new(tx_clone.clone()), screen: Screen::Home }
+        Self { tx, home: HomeScreen::new(tx_clone.clone()), screen: Screen::Home }
     }
 }
 
-impl Component for Base {
-    fn handle_key_event(&mut self, key: crossterm::event::KeyEvent) -> color_eyre::eyre::Result<Option<crate::action::Action>> {
-        self.home.handle_key_event(key)
+impl Base {
+    pub fn handle_key_event(&mut self, key: event::KeyEvent) -> Result<Option<Action>> {
+        let action = match key.code {
+            event::KeyCode::Backspace => Some(Action::Backspace),
+            event::KeyCode::Enter => Some(Action::Enter),
+            event::KeyCode::Left => Some(Action::Left),
+            event::KeyCode::Right => Some(Action::Right),
+            event::KeyCode::Up => Some(Action::Up),
+            event::KeyCode::Down => Some(Action::Down),
+            event::KeyCode::Home => None,
+            event::KeyCode::End => None,
+            event::KeyCode::PageUp => None,
+            event::KeyCode::PageDown => None,
+            event::KeyCode::Tab => Some(Action::Tab),
+            event::KeyCode::BackTab => None,
+            event::KeyCode::Delete => todo!(),
+            event::KeyCode::Insert => None,
+            event::KeyCode::F(_) => None,
+            event::KeyCode::Char(c) => Some(Action::Char(c)),
+            event::KeyCode::Null => None,
+            event::KeyCode::Esc => Some(Action::Esc),
+            event::KeyCode::CapsLock => None,
+            event::KeyCode::ScrollLock => None,
+            event::KeyCode::NumLock => None,
+            event::KeyCode::PrintScreen => None,
+            event::KeyCode::Pause => None,
+            event::KeyCode::Menu => None,
+            event::KeyCode::KeypadBegin => None,
+            event::KeyCode::Media(_) => None,
+            event::KeyCode::Modifier(_) => None,
+        };
+        self.home.handle_key_event(key);
+        Ok(action)
     }
 
-    fn handle_mouse_event(&mut self, mouse: crossterm::event::MouseEvent) -> color_eyre::eyre::Result<Option<crate::action::Action>> {
-        self.home.handle_mouse_event(mouse)
+    pub fn handle_mouse_event(&mut self, mouse: event::MouseEvent) -> Result<Option<Action>> {
+        let _ = mouse;
+        Ok(None)
     }
 
-    fn update(&mut self, action: crate::action::Action) -> color_eyre::eyre::Result<Option<crate::action::Action>> {
+    pub fn update(&mut self, action: Action) -> Result<Option<Action>> {
         self.home.update(action)
     }
 
-    fn draw(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) -> color_eyre::eyre::Result<()> {
+    pub fn draw(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) -> Result<()> {
         match self.screen {
             Screen::Home => self.home.draw(frame, area),
         }

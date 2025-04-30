@@ -1,7 +1,5 @@
 use strum::Display;
 
-use crate::components::home;
-
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum Action {
     Tick,
@@ -13,4 +11,14 @@ pub enum Action {
     ClearScreen,
     Error(String),
     Help,
+    Char(char),
+    Esc,
+    Enter,
+    Tab,
+    Backspace,
+    Up,
+    Down,
+    Right,
+    Left,
+    Space,
 }
