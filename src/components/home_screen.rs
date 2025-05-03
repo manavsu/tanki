@@ -22,6 +22,7 @@ static EXPANDED_SYMBOL: &str = "";
 static ADD_DECK_SYMBOL: &str = "  add deck";
 static ADD_CARD_SYMBOL: &str = "";
 static CURSOR: &str = "█";
+static INPUT_PROMPT: &str = ">> ";
 
 #[derive(Clone)]
 enum Mode {
