@@ -27,6 +27,8 @@ impl Base {
 impl Base {
     pub fn handle_key_event(&mut self, key: event::KeyEvent) -> Result<Option<Action>> {
         let action = match key.code {
+            event::KeyCode::Char(' ') if event::KeyModifiers::CONTROL == key.modifiers => Some(Action::CtrlSpace),
+            event::KeyCode::Char(' ') => Some(Action::Space),
             event::KeyCode::Backspace => Some(Action::Backspace),
             event::KeyCode::Enter => Some(Action::Enter),
             event::KeyCode::Left => Some(Action::Left),
@@ -55,7 +57,7 @@ impl Base {
             event::KeyCode::Media(_) => None,
             event::KeyCode::Modifier(_) => None,
         };
-        self.home.handle_key_event(key);
+        self.home.handle_key_event(key)?;
         Ok(action)
     }
 

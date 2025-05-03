@@ -8,7 +8,7 @@ use ratatui::{
     text::Text,
     widgets::{self, Block, Cell, Paragraph, Row, Table, Wrap},
 };
-use textwrap::wrap;
+use textwrap::{Options, WrapAlgorithm, wrap};
 use tracing::info;
 
 use crate::{
@@ -24,12 +24,12 @@ use super::{CURSOR, INPUT_PROMPT};
 #[derive(Clone)]
 pub struct InputState {
     input: String,
-    curor_position: usize,
+    cursor_position: usize,
 }
 
 impl InputState {
     pub fn new() -> Self {
-        Self { input: String::new(), curor_position: 0 }
+        Self { input: String::new(), cursor_position: 0 }
     }
 
     pub fn get_input(&self) -> String {
@@ -38,19 +38,19 @@ impl InputState {
 
     pub fn push(&mut self, c: char) {
         // self.input = self.input[..self.curor_position].to_string() + &c.to_string() + &self.input[self.curor_position..];
-        self.input.insert(self.curor_position, c);
+        self.input.insert(self.cursor_position, c);
         self.cursor_right();
     }
 
     pub fn cursor_right(&mut self) {
-        if self.curor_position < self.input.len() {
-            self.curor_position += 1;
+        if self.cursor_position < self.input.len() {
+            self.cursor_position += 1;
         }
     }
 
     pub fn cursor_left(&mut self) {
-        if self.curor_position > 0 {
-            self.curor_position -= 1;
+        if self.cursor_position > 0 {
+            self.cursor_position -= 1;
         }
     }
 
@@ -59,31 +59,27 @@ impl InputState {
     }
 
     pub fn pop(&mut self) {
-        if self.curor_position > 0 {
-            self.input.remove(self.curor_position - 1);
-            self.curor_position -= 1;
+        if self.cursor_position > 0 {
+            self.input.remove(self.cursor_position - 1);
+            self.cursor_position -= 1;
         }
     }
 
     pub fn calculate_cursor_coordinates(&self, area: Rect) -> (u16, u16) {
         const BORDER_WIDTH: u16 = 1;
-        // available width for actual text (inside borders + after prompt)
         let text_width = (area.width - BORDER_WIDTH * 2) as usize;
 
-        // wrap returns Vec<Cow<str>>—each entry is one visual line
         let text = self.input_display();
-        let wrapped: Vec<_> = wrap(&text, text_width).into_iter().collect();
+        let options = Options::new(text_width).wrap_algorithm(WrapAlgorithm::FirstFit);
+        let wrapped: Vec<_> = wrap(&text, options).into_iter().collect();
 
-        // which line we end up on?
         let last_row = wrapped.len().saturating_sub(1);
-        // how many chars on that last line?
         let last_line = &wrapped[last_row];
         let col_offset = last_line.chars().count() as u16;
 
-        // clamp to the box size
-        let x = area.x + BORDER_WIDTH + min(col_offset, area.width - BORDER_WIDTH * 2);
-        let y = area.y + BORDER_WIDTH + min(last_row as u16, area.height - BORDER_WIDTH * 2);
-
+        let x = area.x + BORDER_WIDTH + min(col_offset, text_width.saturating_sub(1) as u16);
+        let y = area.y + BORDER_WIDTH + min(last_row as u16, (area.height - BORDER_WIDTH * 2).saturating_sub(1));
+        
         (x, y)
     }
 }
@@ -138,11 +134,11 @@ pub fn draw_deck_panel_insert_view(frame: &mut ratatui::Frame, area: Rect, deck:
 
     let front = Paragraph::new(Text::from(front_text))
         .block(Block::bordered().title("Front"))
-        .wrap(Wrap { trim: false })
+        .wrap(Wrap { trim: true })
         .style(if insert_state.focused_front { prelude::Style::default().fg(prelude::Color::Yellow) } else { prelude::Style::default() });
     let back = Paragraph::new(Text::from(back_text))
         .block(Block::bordered().title("Back"))
-        .wrap(Wrap { trim: false })
+        .wrap(Wrap { trim: true })
         .style(if !insert_state.focused_front { prelude::Style::default().fg(prelude::Color::Yellow) } else { prelude::Style::default() });
     frame.render_widget(Block::bordered().title(format_title(&deck.qualified_name())), area);
     frame.render_widget(front, sections[0]);
@@ -197,6 +193,13 @@ pub fn update_deck_panel_note_insert(action: Action, mut state: InsertNoteState,
                 state.front.pop();
             } else {
                 state.back.pop();
+            }
+        }
+        Action::CtrlSpace => {
+            if state.focused_front {
+                state.front.push('\n');
+            } else {
+                state.back.push('\n');
             }
         }
         Action::Enter => {

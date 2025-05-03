@@ -16,6 +16,7 @@ pub enum Action {
     Enter,
     Tab,
     Backspace,
+    CtrlSpace,
     Up,
     Down,
     Right,

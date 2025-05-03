@@ -2,7 +2,7 @@ use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::layout::Rect;
 use tokio::sync::mpsc;
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::{
     action::Action,
@@ -84,6 +84,7 @@ impl App {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<()> {
+        info!("Key event: {:?}", key);
         match key.code {
             KeyCode::Char('c') if key.modifiers == KeyModifiers::CONTROL => {
                 self.action_tx.send(Action::Quit).ok();
