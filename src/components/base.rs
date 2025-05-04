@@ -1,7 +1,6 @@
 use color_eyre::eyre::Result;
 use crossterm::event;
 use tokio::sync::mpsc::UnboundedSender;
-use tracing::info;
 
 use crate::action::Action;
 
@@ -57,7 +56,6 @@ impl Base {
             event::KeyCode::Media(_) => None,
             event::KeyCode::Modifier(_) => None,
         };
-        self.home.handle_key_event(key)?;
         Ok(action)
     }
 

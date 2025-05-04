@@ -1,6 +1,6 @@
 use color_eyre::Result;
 use tanki::app::App;
-use tracing::{Level, debug, info};
+use tracing::{Level, info};
 use tracing_appender::rolling;
 use tracing_subscriber::fmt::SubscriberBuilder;
 

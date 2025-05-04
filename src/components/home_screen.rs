@@ -12,7 +12,7 @@ use crate::models::collection::Collection;
 use crate::models::deck::Deck;
 
 mod deck_panel;
-
+mod input_state;
 mod title;
 
 static DECK_SYMBOL: &str = "";
@@ -20,7 +20,7 @@ static CARD_SYMBOL: &str = "";
 static COLLAPSED_SYMBOL: &str = "";
 static EXPANDED_SYMBOL: &str = "";
 static ADD_DECK_SYMBOL: &str = "  add deck";
-static ADD_CARD_SYMBOL: &str = "";
+static _ADD_CARD_SYMBOL: &str = "";
 static CURSOR: &str = "█";
 static INPUT_PROMPT: &str = ">> ";
 
@@ -58,10 +58,14 @@ impl HomeScreen {
             mode: Mode::Normal,
         }
     }
+
     pub fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match &self.mode {
             Mode::Normal => self.update_normal(action),
-            Mode::InsertDeck(uuid, _) => Ok(None),
+            Mode::InsertDeck(uuid, input) => {
+                self.update_insert(action, *uuid, input.clone());
+                Ok(None)
+            }
             Mode::InsertNote(state) => {
                 let state = deck_panel::update_deck_panel_note_insert(action, state.clone(), self.get_selected_deck_mut().unwrap());
                 if state.completed {
@@ -79,26 +83,18 @@ impl HomeScreen {
             Action::Char('n') => {
                 self.mode = Mode::InsertNote(InsertNoteState::new());
             }
-            Action::Up => {}
-            _ => {}
-        };
-        Ok(None)
-    }
-
-    fn handle_key_event_normal(&mut self, key: KeyEvent) -> Result<Option<Action>> {
-        match key.code {
-            KeyCode::Char('q') => {
-                return Ok(Some(Action::Quit));
-            }
-            KeyCode::Up | KeyCode::Down => {
-                update_list_selection(key.code, &mut self.state, self.num_options);
-            }
-            KeyCode::Enter => {
-                if self.state.selected().is_some() {
-                    return Ok(None); // TODO
+            Action::Char('d') => {
+                let parent_uuid = if let Some(deck) = self.get_selected_deck() { deck.uuid } else { self.collection.uuid };
+                if !self.expanded.contains(&parent_uuid) {
+                    self.expanded.insert(parent_uuid);
                 }
+                self.mode = Mode::InsertDeck(parent_uuid, String::new());
             }
-            KeyCode::Char(' ') => {
+            Action::Char('q') => return Ok(Some(Action::Quit)),
+            Action::Up | Action::Down => {
+                update_list_selection(action, &mut self.state, self.num_options);
+            }
+            Action::Space => {
                 if let Some(selected) = self.state.selected() {
                     match self.options[selected] {
                         Options::DeckItem(uuid) => {
@@ -108,15 +104,41 @@ impl HomeScreen {
                                 self.expanded.insert(uuid);
                             }
                         }
-                        Options::AddToItem(uuid) => {
-                            self.mode = Mode::InsertDeck(uuid, String::new());
-                        }
+                        Options::AddToItem(_) => {}
                     }
                 }
             }
             _ => {}
         };
         Ok(None)
+    }
+
+    fn update_insert(&mut self, action: Action, uuid: Uuid, input: String) {
+        match action {
+            Action::Space => self.mode = Mode::InsertDeck(uuid, input + " "),
+            Action::Char(c) => self.mode = Mode::InsertDeck(uuid, input + &c.to_string()),
+            Action::Backspace => {
+                self.mode = Mode::InsertDeck(uuid, input[..input.len().saturating_sub(1)].to_string());
+            }
+            Action::Enter => {
+                if !input.is_empty() {
+                    self.collection.add_deck_to(uuid, Deck::new(input));
+                }
+                self.mode = Mode::Normal;
+            }
+            Action::Esc => {
+                self.mode = Mode::Normal;
+            }
+            _ => {}
+        }
+    }
+
+    fn select_add_item(&mut self) {
+        for (i, opt) in self.options.iter().enumerate() {
+            if let Options::AddToItem(_) = opt {
+                self.state.select(Some(i));
+            }
+        }
     }
 
     fn get_selected_deck(&self) -> Option<&Deck> {
@@ -141,26 +163,6 @@ impl HomeScreen {
             }
         }
         None
-    }
-
-    fn handle_key_event_insert(&mut self, key: KeyEvent, uuid: Uuid, input: String) -> Result<Option<Action>> {
-        match key.code {
-            KeyCode::Char(char) => self.mode = Mode::InsertDeck(uuid, input + &char.to_string()),
-            KeyCode::Backspace => {
-                self.mode = Mode::InsertDeck(uuid, input[..input.len().saturating_sub(1)].to_string());
-            }
-            KeyCode::Enter => {
-                if !input.is_empty() {
-                    self.collection.add_deck_to(uuid, Deck::new(input));
-                }
-                self.mode = Mode::Normal;
-            }
-            KeyCode::Esc => {
-                self.mode = Mode::Normal;
-            }
-            _ => {}
-        };
-        Ok(None)
     }
 
     fn build_deck_list_items(&self, parent_uuid: Uuid, _depth: u32) -> (Vec<ListItem<'static>>, Vec<Options>) {
@@ -193,29 +195,16 @@ impl HomeScreen {
             if uuid == &parent_uuid {
                 deck_items.push(ListItem::new(Text::from(spacing + ">> " + &input.clone() + CURSOR)));
                 options.push(Options::AddToItem(*uuid));
-            } else {
-                deck_items.push(ListItem::new(Text::from(spacing + ADD_DECK_SYMBOL)));
-                options.push(Options::AddToItem(parent_uuid));
             }
-        } else {
-            deck_items.push(ListItem::new(Text::from(spacing + ADD_DECK_SYMBOL)));
-            options.push(Options::AddToItem(parent_uuid));
         }
         (deck_items, options)
-    }
-
-    pub fn handle_key_event(&mut self, key: KeyEvent) -> Result<Option<Action>> {
-        match &self.mode {
-            Mode::Normal => self.handle_key_event_normal(key),
-            Mode::InsertDeck(uuid, input) => self.handle_key_event_insert(key, *uuid, input.clone()),
-            Mode::InsertNote(_) => Ok(None),
-        }
     }
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let (decks, options) = self.build_deck_list_items(self.collection.uuid, 1);
         self.options = options;
         self.num_options = self.options.len();
+        self.select_add_item();
 
         let chunks = Layout::vertical([Constraint::Length(8), Constraint::Min(0)]).split(area);
         title::draw_title(frame, chunks[0])?;
@@ -239,16 +228,16 @@ impl HomeScreen {
     }
 }
 
-fn update_list_selection(key_code: KeyCode, state: &mut ListState, num_options: usize) {
+fn update_list_selection(action: Action, state: &mut ListState, num_options: usize) {
     if state.selected().is_none() {
         state.select(Some(0));
         return;
     }
-    match key_code {
-        KeyCode::Up => {
+    match action {
+        Action::Up => {
             state.select(Some(state.selected().unwrap().wrapping_sub(1)));
         }
-        KeyCode::Down => {
+        Action::Down => {
             state.select(Some(state.selected().unwrap().wrapping_add(1) % num_options));
         }
         _ => {}
