@@ -83,11 +83,15 @@ impl HomeScreen {
             Action::Char('n') => {
                 self.mode = Mode::InsertNote(InsertNoteState::new());
             }
-            Action::Char('d') => {
+            Action::Char('s') => {
                 let parent_uuid = if let Some(deck) = self.get_selected_deck() { deck.uuid } else { self.collection.uuid };
                 if !self.expanded.contains(&parent_uuid) {
                     self.expanded.insert(parent_uuid);
                 }
+                self.mode = Mode::InsertDeck(parent_uuid, String::new());
+            }
+            Action::Char('a') => {
+                let parent_uuid = self.collection.uuid;
                 self.mode = Mode::InsertDeck(parent_uuid, String::new());
             }
             Action::Char('q') => return Ok(Some(Action::Quit)),
@@ -201,7 +205,7 @@ impl HomeScreen {
     }
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let (decks, options) = self.build_deck_list_items(self.collection.uuid, 1);
+        let (decks, options) = self.build_deck_list_items(self.collection.uuid, 0);
         self.options = options;
         self.num_options = self.options.len();
         self.select_add_item();
@@ -218,12 +222,9 @@ impl HomeScreen {
         )?;
         frame.render_widget(Block::bordered(), horizontal_chunks[0]);
 
-        let list_chunks = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).margin(1).split(horizontal_chunks[0]);
-        frame.render_widget(Text::from("collection"), list_chunks[0]);
-
         let list =
             List::new(decks).highlight_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)).direction(ListDirection::TopToBottom);
-        frame.render_stateful_widget(list, list_chunks[1], &mut self.state);
+        frame.render_stateful_widget(list.block(Block::bordered().title("[collection]")), horizontal_chunks[0], &mut self.state);
         Ok(())
     }
 }
