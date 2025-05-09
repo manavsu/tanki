@@ -41,7 +41,6 @@ pub struct HomeScreen {
     state: ListState,
     num_options: usize,
     options: Vec<Options>,
-    collection: Collection,
     expanded: HashSet<Uuid>,
     mode: Mode,
 }
@@ -52,22 +51,21 @@ impl HomeScreen {
             tx,
             state: ListState::default(),
             num_options: 0,
-            collection: Collection::default(),
             expanded: HashSet::new(),
             options: Vec::new(),
             mode: Mode::Normal,
         }
     }
 
-    pub fn update(&mut self, action: Action) -> Result<Option<Action>> {
+    pub fn update(&mut self, collection: &mut Collection, action: Action) -> Result<Option<Action>> {
         match &self.mode {
-            Mode::Normal => self.update_normal(action),
+            Mode::Normal => self.update_normal(collection, action),
             Mode::InsertDeck(uuid, input) => {
-                self.update_insert(action, *uuid, input.clone());
+                self.update_insert(collection, action, *uuid, input.clone());
                 Ok(None)
             }
             Mode::InsertNote(state) => {
-                let state = deck_panel::update_deck_panel_note_insert(action, state.clone(), self.get_selected_deck_mut().unwrap());
+                let state = deck_panel::update_deck_panel_note_insert(action, state.clone(), self.get_selected_deck_mut(collection).unwrap());
                 if state.completed {
                     self.mode = Mode::Normal;
                 } else {
@@ -78,20 +76,20 @@ impl HomeScreen {
         }
     }
 
-    pub fn update_normal(&mut self, action: Action) -> Result<Option<Action>> {
+    pub fn update_normal(&mut self, collection: &mut Collection, action: Action) -> Result<Option<Action>> {
         match action {
             Action::Char('n') => {
                 self.mode = Mode::InsertNote(InsertNoteState::new());
             }
             Action::Char('s') => {
-                let parent_uuid = if let Some(deck) = self.get_selected_deck() { deck.uuid } else { self.collection.uuid };
+                let parent_uuid = if let Some(deck) = self.get_selected_deck(collection) { deck.uuid } else { collection.uuid };
                 if !self.expanded.contains(&parent_uuid) {
                     self.expanded.insert(parent_uuid);
                 }
                 self.mode = Mode::InsertDeck(parent_uuid, String::new());
             }
             Action::Char('a') => {
-                let parent_uuid = self.collection.uuid;
+                let parent_uuid = collection.uuid;
                 self.mode = Mode::InsertDeck(parent_uuid, String::new());
             }
             Action::Char('q') => return Ok(Some(Action::Quit)),
@@ -117,7 +115,7 @@ impl HomeScreen {
         Ok(None)
     }
 
-    fn update_insert(&mut self, action: Action, uuid: Uuid, input: String) {
+    fn update_insert(&mut self, collection: &mut Collection, action: Action, uuid: Uuid, input: String) {
         match action {
             Action::Space => self.mode = Mode::InsertDeck(uuid, input + " "),
             Action::Char(c) => self.mode = Mode::InsertDeck(uuid, input + &c.to_string()),
@@ -126,7 +124,7 @@ impl HomeScreen {
             }
             Action::Enter => {
                 if !input.is_empty() {
-                    self.collection.add_deck_to(uuid, Deck::new(input));
+                    collection.add_deck_to(uuid, Deck::new(input));
                 }
                 self.mode = Mode::Normal;
             }
@@ -145,36 +143,36 @@ impl HomeScreen {
         }
     }
 
-    fn get_selected_deck(&self) -> Option<&Deck> {
+    fn get_selected_deck(&self, collection: &Collection) -> Option<Deck> {
         if let Some(selected) = self.state.selected() {
             if selected < self.options.len() {
                 match &self.options[selected] {
-                    Options::DeckItem(uuid) => return self.collection.find_deck(*uuid),
-                    Options::AddToItem(uuid) => return self.collection.find_deck(*uuid),
+                    Options::DeckItem(uuid) => return collection.find_deck(*uuid).map(|f| f.clone()),
+                    Options::AddToItem(uuid) => return collection.find_deck(*uuid).map(|f| f.clone()),
                 }
             }
         }
         None
     }
 
-    fn get_selected_deck_mut(&mut self) -> Option<&mut Deck> {
+    fn get_selected_deck_mut<'a>(&mut self, collection: &'a mut Collection) -> Option<&'a mut Deck> {
         if let Some(selected) = self.state.selected() {
             if selected < self.options.len() {
                 match &self.options[selected] {
-                    Options::DeckItem(uuid) => return self.collection.find_deck_mut(*uuid),
-                    Options::AddToItem(uuid) => return self.collection.find_deck_mut(*uuid),
+                    Options::DeckItem(uuid) => return collection.find_deck_mut(*uuid),
+                    Options::AddToItem(uuid) => return collection.find_deck_mut(*uuid),
                 }
             }
         }
         None
     }
 
-    fn build_deck_list_items(&self, parent_uuid: Uuid, _depth: u32) -> (Vec<ListItem<'static>>, Vec<Options>) {
-        let decks = match self.collection.find_deck(parent_uuid) {
+    fn build_deck_list_items(&self, collection: &Collection, parent_uuid: Uuid, _depth: u32) -> (Vec<ListItem<'static>>, Vec<Options>) {
+        let decks = match collection.find_deck(parent_uuid) {
             Some(deck) => deck.get_subdecks(),
             None => {
-                if parent_uuid == self.collection.uuid {
-                    self.collection.get_decks()
+                if parent_uuid == collection.uuid {
+                    collection.get_decks()
                 } else {
                     return (Vec::new(), Vec::new());
                 }
@@ -190,7 +188,7 @@ impl HomeScreen {
             deck_items.push(ListItem::new(build_deck_label(deck, header)));
             options.push(Options::DeckItem(deck.uuid));
             if deck_expanded {
-                let (d_items, o_items) = self.build_deck_list_items(deck.uuid, _depth + 1);
+                let (d_items, o_items) = self.build_deck_list_items(collection, deck.uuid, _depth + 1);
                 deck_items.extend(d_items);
                 options.extend(o_items);
             }
@@ -204,8 +202,8 @@ impl HomeScreen {
         (deck_items, options)
     }
 
-    pub fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
-        let (decks, options) = self.build_deck_list_items(self.collection.uuid, 0);
+    pub fn draw(&mut self, collection: &Collection, frame: &mut Frame, area: Rect) -> Result<()> {
+        let (decks, options) = self.build_deck_list_items(collection, collection.uuid, 0);
         self.options = options;
         self.num_options = self.options.len();
         self.select_add_item();
@@ -217,7 +215,7 @@ impl HomeScreen {
         deck_panel::draw_deck_panel(
             frame,
             horizontal_chunks[1],
-            self.get_selected_deck(),
+            self.get_selected_deck(collection),
             if let Mode::InsertNote(state) = &self.mode { Some(state.clone()) } else { None },
         )?;
         frame.render_widget(Block::bordered(), horizontal_chunks[0]);

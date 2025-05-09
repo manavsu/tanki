@@ -22,4 +22,6 @@ pub enum Action {
     Right,
     Left,
     Space,
+    Save,
+    Load,
 }

@@ -31,7 +31,7 @@ impl InsertNoteState {
 pub fn draw_deck_panel(
     frame: &mut ratatui::Frame,
     area: Rect,
-    deck: Option<&Deck>,
+    deck: Option<Deck>,
     insert_state: Option<InsertNoteState>,
 ) -> color_eyre::eyre::Result<()> {
     match insert_state {
@@ -46,7 +46,7 @@ pub fn draw_deck_panel(
     Ok(())
 }
 
-pub fn draw_deck_panel_insert_view(frame: &mut ratatui::Frame, area: Rect, deck: &Deck, insert_state: InsertNoteState) {
+pub fn draw_deck_panel_insert_view(frame: &mut ratatui::Frame, area: Rect, deck: Deck, insert_state: InsertNoteState) {
     let sections =
         Layout::default().direction(Direction::Vertical).constraints([Constraint::Percentage(50), Constraint::Percentage(50)]).margin(2).split(area);
 
@@ -79,7 +79,7 @@ fn format_title(title: &str) -> String {
     "[".to_string() + title + "]"
 }
 
-pub fn draw_deck_panel_normal_view(frame: &mut ratatui::Frame, area: Rect, deck: Option<&Deck>) {
+pub fn draw_deck_panel_normal_view(frame: &mut ratatui::Frame, area: Rect, deck: Option<Deck>) {
     match deck {
         None => {
             frame.render_widget(Paragraph::new(Text::from("-----")).block(Block::bordered().title(format_title("*"))), area);

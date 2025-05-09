@@ -2,7 +2,7 @@ use color_eyre::eyre::Result;
 use crossterm::event;
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::action::Action;
+use crate::{action::Action, models::collection::Collection};
 
 use super::home_screen::HomeScreen;
 
@@ -14,12 +14,13 @@ pub struct Base {
     tx: UnboundedSender<Action>,
     home: HomeScreen,
     screen: Screen,
+    collection: Collection,
 }
 
 impl Base {
     pub fn new(tx: UnboundedSender<Action>) -> Self {
         let tx_clone = tx.clone();
-        Self { tx, home: HomeScreen::new(tx_clone.clone()), screen: Screen::Home }
+        Self { tx, home: HomeScreen::new(tx_clone.clone()), screen: Screen::Home, collection: Collection::default()}
     }
 }
 
@@ -65,12 +66,19 @@ impl Base {
     }
 
     pub fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        self.home.update(action)
+        match action {
+            Action::Load => {}
+            Action::Save => {}
+            _ => {}
+        }
+        match self.screen {
+            Screen::Home => self.home.update(&mut self.collection, action),
+        }
     }
 
     pub fn draw(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) -> Result<()> {
         match self.screen {
-            Screen::Home => self.home.draw(frame, area),
+            Screen::Home => self.home.draw(&self.collection, frame, area),
         }
     }
 }
