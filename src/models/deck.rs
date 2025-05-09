@@ -55,6 +55,16 @@ impl Deck {
         self.subdecks.iter().flat_map(|d| d.get_all_subdecks()).chain(self.get_subdecks()).collect()
     }
 
+    pub fn remove_deck(&mut self, uuid: Uuid) {
+        if let Some(pos) = self.subdecks.iter().position(|deck| deck.uuid == uuid) {
+            self.subdecks.remove(pos);
+        } else {
+            for deck in &mut self.subdecks {
+                deck.remove_deck(uuid);
+            }
+        }
+    }
+
     pub fn find_deck_mut(&mut self, uuid: Uuid) -> Option<&mut Deck> {
         if self.uuid == uuid {
             return Some(self);

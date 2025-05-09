@@ -5,6 +5,7 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::{action::Action, models::collection::Collection};
 
 use super::home_screen::HomeScreen;
+use super::utils;
 
 pub enum Screen {
     Home,
@@ -20,7 +21,7 @@ pub struct Base {
 impl Base {
     pub fn new(tx: UnboundedSender<Action>) -> Self {
         let tx_clone = tx.clone();
-        Self { tx, home: HomeScreen::new(tx_clone.clone()), screen: Screen::Home, collection: Collection::default()}
+        Self { tx, home: HomeScreen::new(tx_clone.clone()), screen: Screen::Home, collection: Collection::load_from_file(utils::save_file_location())}
     }
 }
 
@@ -66,11 +67,7 @@ impl Base {
     }
 
     pub fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        match action {
-            Action::Load => {}
-            Action::Save => {}
-            _ => {}
-        }
+        if action == Action::Save {self.collection.save_to_file(utils::save_file_location());}
         match self.screen {
             Screen::Home => self.home.update(&mut self.collection, action),
         }

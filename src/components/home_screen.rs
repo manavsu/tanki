@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use color_eyre::Result;
-use crossterm::event::{KeyCode, KeyEvent};
 use deck_panel::InsertNoteState;
 use ratatui::{prelude::*, widgets::*};
 use tokio::sync::mpsc::UnboundedSender;
@@ -61,17 +60,17 @@ impl HomeScreen {
         match &self.mode {
             Mode::Normal => self.update_normal(collection, action),
             Mode::InsertDeck(uuid, input) => {
-                self.update_insert(collection, action, *uuid, input.clone());
-                Ok(None)
+                self.update_insert(collection, action, *uuid, input.clone())
             }
             Mode::InsertNote(state) => {
                 let state = deck_panel::update_deck_panel_note_insert(action, state.clone(), self.get_selected_deck_mut(collection).unwrap());
                 if state.completed {
                     self.mode = Mode::Normal;
+                    Ok(Some(Action::Save))
                 } else {
                     self.mode = Mode::InsertNote(state);
+                    Ok(None)
                 }
-                Ok(None)
             }
         }
     }
@@ -79,7 +78,9 @@ impl HomeScreen {
     pub fn update_normal(&mut self, collection: &mut Collection, action: Action) -> Result<Option<Action>> {
         match action {
             Action::Char('n') => {
-                self.mode = Mode::InsertNote(InsertNoteState::new());
+                if self.get_selected_deck(collection).is_some() {
+                    self.mode = Mode::InsertNote(InsertNoteState::new());
+                }
             }
             Action::Char('s') => {
                 let parent_uuid = if let Some(deck) = self.get_selected_deck(collection) { deck.uuid } else { collection.uuid };
@@ -93,6 +94,16 @@ impl HomeScreen {
                 self.mode = Mode::InsertDeck(parent_uuid, String::new());
             }
             Action::Char('q') => return Ok(Some(Action::Quit)),
+            Action::Char('d') => {
+                if self.get_selected_deck(collection).is_some() {
+                    if let Some(selected) = self.state.selected() {
+                        if let Options::DeckItem(uuid) = &self.options[selected] {
+                            collection.remove_deck(*uuid);
+                        }
+                    }
+                }
+
+            }
             Action::Up | Action::Down => {
                 update_list_selection(action, &mut self.state, self.num_options);
             }
@@ -115,7 +126,7 @@ impl HomeScreen {
         Ok(None)
     }
 
-    fn update_insert(&mut self, collection: &mut Collection, action: Action, uuid: Uuid, input: String) {
+    fn update_insert(&mut self, collection: &mut Collection, action: Action, uuid: Uuid, input: String) -> Result<Option<Action>> {
         match action {
             Action::Space => self.mode = Mode::InsertDeck(uuid, input + " "),
             Action::Char(c) => self.mode = Mode::InsertDeck(uuid, input + &c.to_string()),
@@ -123,16 +134,18 @@ impl HomeScreen {
                 self.mode = Mode::InsertDeck(uuid, input[..input.len().saturating_sub(1)].to_string());
             }
             Action::Enter => {
+                self.mode = Mode::Normal;
                 if !input.is_empty() {
                     collection.add_deck_to(uuid, Deck::new(input));
+                    return Ok(Some(Action::Save))
                 }
-                self.mode = Mode::Normal;
             }
             Action::Esc => {
                 self.mode = Mode::Normal;
             }
             _ => {}
-        }
+        };
+        Ok(None)
     }
 
     fn select_add_item(&mut self) {
@@ -147,8 +160,8 @@ impl HomeScreen {
         if let Some(selected) = self.state.selected() {
             if selected < self.options.len() {
                 match &self.options[selected] {
-                    Options::DeckItem(uuid) => return collection.find_deck(*uuid).map(|f| f.clone()),
-                    Options::AddToItem(uuid) => return collection.find_deck(*uuid).map(|f| f.clone()),
+                    Options::DeckItem(uuid) => return collection.find_deck(*uuid).cloned(),
+                    Options::AddToItem(uuid) => return collection.find_deck(*uuid).cloned(),
                 }
             }
         }

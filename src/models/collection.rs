@@ -1,3 +1,6 @@
+use std::fs;
+use std::path::PathBuf;
+
 use serde::Deserialize;
 use serde::Serialize;
 use uuid::Uuid;
@@ -15,6 +18,20 @@ impl Collection {
         Collection { decks: Vec::new(), uuid: uuid::Uuid::new_v4() }
     }
 
+    pub fn load_from_file(path: PathBuf) -> Self {
+        if let Ok(content) = fs::read_to_string(path) {
+            if let Ok(collection) = serde_json::from_str::<Collection>(&content) {
+                return collection;
+            }
+        }
+        Collection { decks: Vec::new(), uuid: uuid::Uuid::new_v4() }
+    }
+
+    pub fn save_to_file(&self, path: PathBuf) {
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, serde_json::to_string_pretty(&self).unwrap()).unwrap();
+    }
+
     pub fn add_deck(&mut self, deck: Deck) {
         self.decks.push(deck);
     }
@@ -25,6 +42,16 @@ impl Collection {
         } else {
             self.add_deck(deck);
         } 
+    }
+
+    pub fn remove_deck(&mut self, uuid: Uuid) {
+        if let Some(pos) = self.decks.iter().position(|deck| deck.uuid == uuid) {
+            self.decks.remove(pos);
+        } else {
+            for deck in &mut self.decks {
+                deck.remove_deck(uuid);
+            }
+        }
     }
 
     pub fn find_deck_mut(&mut self, uuid: Uuid) -> Option<&mut Deck> {
