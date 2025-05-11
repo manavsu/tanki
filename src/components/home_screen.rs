@@ -10,6 +10,7 @@ use crate::action::Action;
 use crate::models::collection::Collection;
 use crate::models::deck::Deck;
 
+mod command_bar;
 mod deck_panel;
 mod input_state;
 mod title;
@@ -18,14 +19,12 @@ static DECK_SYMBOL: &str = "";
 static CARD_SYMBOL: &str = "";
 static COLLAPSED_SYMBOL: &str = "";
 static EXPANDED_SYMBOL: &str = "";
-static ADD_DECK_SYMBOL: &str = "  add deck";
-static _ADD_CARD_SYMBOL: &str = "";
 static CURSOR: &str = "█";
 static INPUT_PROMPT: &str = ">> ";
 
 #[derive(Clone)]
 enum Mode {
-    Normal,
+    Normal(Option<Uuid>),
     InsertDeck(Uuid, String),
     InsertNote(InsertNoteState),
 }
@@ -46,26 +45,17 @@ pub struct HomeScreen {
 
 impl HomeScreen {
     pub fn new(tx: UnboundedSender<Action>) -> Self {
-        Self {
-            tx,
-            state: ListState::default(),
-            num_options: 0,
-            expanded: HashSet::new(),
-            options: Vec::new(),
-            mode: Mode::Normal,
-        }
+        Self { tx, state: ListState::default(), num_options: 0, expanded: HashSet::new(), options: Vec::new(), mode: Mode::Normal(None) }
     }
 
     pub fn update(&mut self, collection: &mut Collection, action: Action) -> Result<Option<Action>> {
         match &self.mode {
-            Mode::Normal => self.update_normal(collection, action),
-            Mode::InsertDeck(uuid, input) => {
-                self.update_insert(collection, action, *uuid, input.clone())
-            }
+            Mode::Normal(_) => self.update_normal(collection, action),
+            Mode::InsertDeck(uuid, input) => self.update_insert(collection, action, *uuid, input.clone()),
             Mode::InsertNote(state) => {
                 let state = deck_panel::update_deck_panel_note_insert(action, state.clone(), self.get_selected_deck_mut(collection).unwrap());
                 if state.completed {
-                    self.mode = Mode::Normal;
+                    self.mode = Mode::Normal(self.get_selected_deck(collection).map(|d| d.uuid));
                     Ok(Some(Action::Save))
                 } else {
                     self.mode = Mode::InsertNote(state);
@@ -90,8 +80,7 @@ impl HomeScreen {
                 self.mode = Mode::InsertDeck(parent_uuid, String::new());
             }
             Action::Char('a') => {
-                let parent_uuid = collection.uuid;
-                self.mode = Mode::InsertDeck(parent_uuid, String::new());
+                self.mode = Mode::InsertDeck(collection.uuid, String::new());
             }
             Action::Char('q') => return Ok(Some(Action::Quit)),
             Action::Char('d') => {
@@ -102,10 +91,10 @@ impl HomeScreen {
                         }
                     }
                 }
-
             }
             Action::Up | Action::Down => {
                 update_list_selection(action, &mut self.state, self.num_options);
+                self.mode = Mode::Normal(self.get_selected_deck(collection).map(|d| d.uuid));
             }
             Action::Space => {
                 if let Some(selected) = self.state.selected() {
@@ -134,14 +123,14 @@ impl HomeScreen {
                 self.mode = Mode::InsertDeck(uuid, input[..input.len().saturating_sub(1)].to_string());
             }
             Action::Enter => {
-                self.mode = Mode::Normal;
+                self.mode = Mode::Normal(self.get_selected_deck(collection).map(|d| d.uuid));
                 if !input.is_empty() {
                     collection.add_deck_to(uuid, Deck::new(input));
-                    return Ok(Some(Action::Save))
+                    return Ok(Some(Action::Save));
                 }
             }
             Action::Esc => {
-                self.mode = Mode::Normal;
+                self.mode = Mode::Normal(self.get_selected_deck(collection).map(|d| d.uuid));
             }
             _ => {}
         };
@@ -221,16 +210,17 @@ impl HomeScreen {
         self.num_options = self.options.len();
         self.select_add_item();
 
-        let chunks = Layout::vertical([Constraint::Length(8), Constraint::Min(0)]).split(area);
+        let chunks = Layout::vertical([Constraint::Length(7), Constraint::Min(0), Constraint::Length(3)]).split(area);
         title::draw_title(frame, chunks[0])?;
 
-        let horizontal_chunks = Layout::horizontal(Constraint::from_percentages([50, 50])).split(chunks[1]);
+        let horizontal_chunks = Layout::horizontal(Constraint::from_percentages([25, 75])).split(chunks[1]);
         deck_panel::draw_deck_panel(
             frame,
             horizontal_chunks[1],
             self.get_selected_deck(collection),
             if let Mode::InsertNote(state) = &self.mode { Some(state.clone()) } else { None },
         )?;
+        command_bar::draw_command_bar(frame, chunks[2], self.mode.clone());
         frame.render_widget(Block::bordered(), horizontal_chunks[0]);
 
         let list =
@@ -260,14 +250,14 @@ fn build_deck_label(deck: &Deck, header: String) -> Text<'static> {
     Text::from(
         header
             + " "
-            + &deck.name.clone()
-            + " "
             + CARD_SYMBOL
             + " "
             + &deck.get_cards().len().to_string()
             + " "
             + DECK_SYMBOL
             + " "
-            + &deck.get_subdecks().len().to_string(),
+            + &deck.get_subdecks().len().to_string()
+            + " "
+            + &deck.name.clone(),
     )
 }

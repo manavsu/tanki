@@ -6,7 +6,7 @@ use crate::{
     },
 };
 use ratatui::{
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Layout},
     prelude::{self, Rect},
     text::Text,
     widgets::{Block, Cell, Paragraph, Row, Table, Wrap},
@@ -18,7 +18,7 @@ use super::input_state::InputState;
 pub struct InsertNoteState {
     front: InputState,
     back: InputState,
-    focused_front: bool,
+    pub focused_front: bool,
     pub completed: bool,
 }
 
@@ -47,8 +47,7 @@ pub fn draw_deck_panel(
 }
 
 pub fn draw_deck_panel_insert_view(frame: &mut ratatui::Frame, area: Rect, deck: Deck, insert_state: InsertNoteState) {
-    let sections =
-        Layout::default().direction(Direction::Vertical).constraints([Constraint::Percentage(50), Constraint::Percentage(50)]).margin(2).split(area);
+    let sections = Layout::vertical(Constraint::from_percentages([45, 55])).margin(2).split(area);
 
     let (front_text, back_text) = if insert_state.focused_front {
         (insert_state.front.input_display(), insert_state.back.get_input())
@@ -91,15 +90,24 @@ pub fn draw_deck_panel_normal_view(frame: &mut ratatui::Frame, area: Rect, deck:
             let rows: Vec<Row> = deck
                 .get_notes()
                 .iter()
-                .map(|note| Row::new([Cell::from(Text::from(note.front.clone())), Cell::from(Text::from(note.back.clone()))]))
+                .map(|note| {
+                    Row::new([
+                        Cell::from(Text::from(remove_newlines(note.front.clone()))),
+                        Cell::from(Text::from(remove_newlines(note.back.clone()))),
+                    ])
+                })
                 .collect();
 
-            let widths = Constraint::from_percentages([50, 50]);
-            let table = Table::new(rows, widths);
+            let widths = Constraint::from_percentages([30, 70]);
+            let table = Table::new(rows, widths).column_spacing(3);
 
             frame.render_widget(table.block(Block::bordered().title(format_title(&deck.qualified_name()))), area);
         }
     }
+}
+
+fn remove_newlines(str: String) -> String {
+    str.replace("\n", " ")
 }
 
 pub fn update_deck_panel_note_insert(action: Action, mut state: InsertNoteState, deck: &mut Deck) -> InsertNoteState {

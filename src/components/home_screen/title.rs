@@ -5,11 +5,11 @@ use ratatui::{
 };
 
 pub fn draw_title(frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) -> Result<()> {
-    frame.render_widget(Paragraph::new(create_logo_lext()).block(Block::bordered()).centered(), area);
+    frame.render_widget(Paragraph::new(create_small_logo_text()).block(Block::bordered()).centered(), area);
     Ok(())
 }
 
-fn create_logo_lext() -> Text<'static> {
+fn _create_logo_lext() -> Text<'static> {
     Text::from(
         "████████╗ █████╗ ███╗  ██╗██╗  ██╗██╗
 ╚══██╔══╝██╔══██╗████╗ ██║██║ ██╔╝██║
@@ -17,5 +17,13 @@ fn create_logo_lext() -> Text<'static> {
    ██║   ██╔══██║██║╚████║██╔═██╗ ██║
    ██║   ██║  ██║██║ ╚███║██║ ╚██╗██║
    ╚═╝   ╚═╝  ╚═╝╚═╝  ╚══╝╚═╝  ╚═╝╚═╝",
+    )
+}
+
+fn create_small_logo_text() -> Text<'static> {
+    Text::from("▗▄▄▄▖▗▄▖ ▗▖  ▗▖▗▖ ▗▖▗▄▄▄▖
+  █ ▐▌ ▐▌▐▛▚▖▐▌▐▌▗▞▘  █  
+  █ ▐▛▀▜▌▐▌ ▝▜▌▐▛▚▖   █  
+  █ ▐▌ ▐▌▐▌  ▐▌▐▌ ▐▌▗▄█▄▖"
     )
 }
