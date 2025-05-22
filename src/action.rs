@@ -1,5 +1,10 @@
 use strum::Display;
 
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub enum Screen {
+    Home,
+    Practice(uuid::Uuid),
+}
 #[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum Action {
     Tick,
@@ -24,4 +29,5 @@ pub enum Action {
     Space,
     Save,
     Load,
+    Screen(Screen),
 }

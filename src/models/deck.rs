@@ -5,7 +5,7 @@ use uuid::Uuid;
 use crate::models::card::Card;
 use crate::models::note::Note;
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Clone, Debug)]
 pub struct Deck {
     pub name: String,
     pub uuid: Uuid,
@@ -35,7 +35,7 @@ impl Deck {
         self.notes.push(card);
     }
 
-    pub(crate) fn get_cards(&self) -> Vec<Card> {
+    pub fn get_cards(&self) -> Vec<Card> {
         self.notes.iter().flat_map(|n| n.get_cards()).collect()
     }
 

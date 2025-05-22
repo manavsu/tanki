@@ -6,7 +6,7 @@ use ratatui::{prelude::*, widgets::*};
 use tokio::sync::mpsc::UnboundedSender;
 use uuid::Uuid;
 
-use crate::action::Action;
+use crate::action::{self, Action, Screen};
 use crate::models::collection::Collection;
 use crate::models::deck::Deck;
 
@@ -83,7 +83,7 @@ impl HomeScreen {
                 self.mode = Mode::InsertDeck(collection.uuid, String::new());
             }
             Action::Char('q') => return Ok(Some(Action::Quit)),
-            Action::Char('d') => {
+            Action::Char('D') => {
                 if self.get_selected_deck(collection).is_some() {
                     if let Some(selected) = self.state.selected() {
                         if let Options::DeckItem(uuid) = &self.options[selected] {
@@ -108,6 +108,11 @@ impl HomeScreen {
                         }
                         Options::AddToItem(_) => {}
                     }
+                }
+            }
+            Action::Enter => {
+                if let Some(selected) = self.get_selected_deck(collection) {
+                    return Ok(Some(Action::Screen(Screen::Practice(selected.uuid))));
                 }
             }
             _ => {}

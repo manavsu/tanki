@@ -3,7 +3,7 @@ use serde::Serialize;
 
 use crate::models::card::Card;
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Note {
     pub front: String,
     pub back: String,
@@ -25,7 +25,7 @@ impl Note {
     }
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Hash, Clone, Debug)]
 pub enum NoteType {
     Basic,
     BasicAndReverse,

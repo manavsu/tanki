@@ -2,18 +2,17 @@ use color_eyre::eyre::Result;
 use crossterm::event;
 use tokio::sync::mpsc::UnboundedSender;
 
+use crate::action::Screen;
 use crate::{action::Action, models::collection::Collection};
 
 use super::home_screen::HomeScreen;
+use super::practice_screen::PracticeScreen;
 use super::utils;
 
-pub enum Screen {
-    Home,
-}
-
 pub struct Base {
-    tx: UnboundedSender<Action>,
+    _tx: UnboundedSender<Action>,
     home: HomeScreen,
+    practice: PracticeScreen,
     screen: Screen,
     collection: Collection,
 }
@@ -21,7 +20,13 @@ pub struct Base {
 impl Base {
     pub fn new(tx: UnboundedSender<Action>) -> Self {
         let tx_clone = tx.clone();
-        Self { tx, home: HomeScreen::new(tx_clone.clone()), screen: Screen::Home, collection: Collection::load_from_file(utils::save_file_location())}
+        Self {
+            _tx: tx,
+            home: HomeScreen::new(tx_clone.clone()),
+            screen: Screen::Home,
+            practice: PracticeScreen::default(),
+            collection: Collection::load_from_file(utils::save_file_location()),
+        }
     }
 }
 
@@ -67,15 +72,24 @@ impl Base {
     }
 
     pub fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        if action == Action::Save {self.collection.save_to_file(utils::save_file_location());}
+        match action.clone() {
+            Action::Save => self.collection.save_to_file(utils::save_file_location()),
+            Action::Screen(new_screen) => {
+                self.screen = new_screen;
+            }
+            _ => {}
+        };
+
         match self.screen {
             Screen::Home => self.home.update(&mut self.collection, action),
+            Screen::Practice(uuid) => self.practice.update(self.collection.find_deck(uuid).unwrap(), action),
         }
     }
 
     pub fn draw(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) -> Result<()> {
         match self.screen {
             Screen::Home => self.home.draw(&self.collection, frame, area),
+            Screen::Practice(uuid) => self.practice.draw(self.collection.find_deck(uuid).unwrap(), frame, area),
         }
     }
 }

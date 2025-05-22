@@ -41,7 +41,7 @@ impl Collection {
             found_deck.add_subdeck(deck);
         } else {
             self.add_deck(deck);
-        } 
+        }
     }
 
     pub fn remove_deck(&mut self, uuid: Uuid) {

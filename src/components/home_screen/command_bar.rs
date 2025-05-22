@@ -1,6 +1,6 @@
 use ratatui::{
     layout::Rect,
-    text::{self, Line, Span, Text},
+    text::{Line, Span},
     widgets::{Block, Paragraph},
 };
 
@@ -10,13 +10,14 @@ pub fn draw_command_bar(frame: &mut ratatui::Frame, area: Rect, mode: Mode) {
     let commands: Vec<&str> = match mode {
         Mode::Normal(Some(_)) => {
             vec![
-                "<Space> expand/collapse",
+                "<Space> : expand/collapse",
+                "<CR> : practice",
                 "<Up> : up",
                 "<Down> : down",
                 "<n> : +note",
                 "<s> : +subdeck",
                 "<a> : +deck",
-                "<d> : delete",
+                "<D> : delete",
                 "<q> : quit",
             ]
         }
