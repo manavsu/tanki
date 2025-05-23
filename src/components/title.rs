@@ -21,9 +21,10 @@ fn _create_logo_lext() -> Text<'static> {
 }
 
 fn create_small_logo_text() -> Text<'static> {
-    Text::from("▗▄▄▄▖▗▄▖ ▗▖  ▗▖▗▖ ▗▖▗▄▄▄▖
+    Text::from(
+        "▗▄▄▄▖▗▄▖ ▗▖  ▗▖▗▖ ▗▖▗▄▄▄▖
   █ ▐▌ ▐▌▐▛▚▖▐▌▐▌▗▞▘  █  
   █ ▐▛▀▜▌▐▌ ▝▜▌▐▛▚▖   █  
-  █ ▐▌ ▐▌▐▌  ▐▌▐▌ ▐▌▗▄█▄▖"
+  █ ▐▌ ▐▌▐▌  ▐▌▐▌ ▐▌▗▄█▄▖",
     )
 }

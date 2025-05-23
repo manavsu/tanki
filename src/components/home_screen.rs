@@ -1,3 +1,4 @@
+use crate::components::title;
 use std::collections::HashSet;
 
 use color_eyre::Result;
@@ -13,7 +14,6 @@ use crate::models::deck::Deck;
 mod command_bar;
 mod deck_panel;
 mod input_state;
-mod title;
 
 static DECK_SYMBOL: &str = "";
 static CARD_SYMBOL: &str = "";
@@ -64,7 +64,6 @@ impl HomeScreen {
             }
         }
     }
-
     pub fn update_normal(&mut self, collection: &mut Collection, action: Action) -> Result<Option<Action>> {
         match action {
             Action::Char('n') => {
