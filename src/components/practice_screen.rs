@@ -1,5 +1,3 @@
-use std::clone;
-
 use crate::{
     action::{Action, Screen},
     models::{card::Card, deck::Deck},
@@ -7,7 +5,7 @@ use crate::{
 use color_eyre::Result;
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Margin, Rect},
+    layout::{Constraint, Layout, Rect},
     text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };

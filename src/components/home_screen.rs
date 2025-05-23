@@ -7,7 +7,7 @@ use ratatui::{prelude::*, widgets::*};
 use tokio::sync::mpsc::UnboundedSender;
 use uuid::Uuid;
 
-use crate::action::{self, Action, Screen};
+use crate::action::{Action, Screen};
 use crate::models::collection::Collection;
 use crate::models::deck::Deck;
 
@@ -35,7 +35,7 @@ enum Options {
 }
 
 pub struct HomeScreen {
-    tx: UnboundedSender<Action>,
+    _tx: UnboundedSender<Action>,
     state: ListState,
     num_options: usize,
     options: Vec<Options>,
@@ -45,7 +45,7 @@ pub struct HomeScreen {
 
 impl HomeScreen {
     pub fn new(tx: UnboundedSender<Action>) -> Self {
-        Self { tx, state: ListState::default(), num_options: 0, expanded: HashSet::new(), options: Vec::new(), mode: Mode::Normal(None) }
+        Self { _tx: tx, state: ListState::default(), num_options: 0, expanded: HashSet::new(), options: Vec::new(), mode: Mode::Normal(None) }
     }
 
     pub fn update(&mut self, collection: &mut Collection, action: Action) -> Result<Option<Action>> {
