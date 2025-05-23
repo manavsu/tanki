@@ -34,5 +34,5 @@ pub fn draw_command_bar(frame: &mut ratatui::Frame, area: Rect, mode: Mode) {
     .flat_map(|c| [c, "   "])
     .collect();
     let line = Line::from(commands.into_iter().map(Span::from).collect::<Vec<_>>());
-    frame.render_widget(Paragraph::new(line).centered().block(Block::default().title("[Commands]").borders(ratatui::widgets::Borders::ALL)), area);
+    frame.render_widget(Paragraph::new(line).centered().block(Block::default().title("[commands]").borders(ratatui::widgets::Borders::ALL)), area);
 }

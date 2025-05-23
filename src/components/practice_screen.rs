@@ -79,20 +79,20 @@ impl PracticeScreen {
     fn draw_front(&self, card: Card, frame: &mut Frame, area: Rect) {
         let front = Paragraph::new("\n".to_string() + &card.front + "\n")
             .centered()
-            .block(Block::default().title(format!("[Practice][{}/{}]", self.cnt + 1, self.cards.len())).borders(Borders::ALL));
+            .block(Block::default().title(format!("[practice][{}/{}]", self.cnt + 1, self.cards.len())).borders(Borders::ALL));
         frame.render_widget(front, area);
     }
 
     fn draw_back(&self, card: Card, frame: &mut Frame<'_>, area: Rect) {
         let front = Paragraph::new("\n".to_string() + &card.front + DIVIDER_TEXT + &card.back + "\n")
             .centered()
-            .block(Block::default().title(format!("[Practice][{}/{}]", self.cnt + 1, self.cards.len())).borders(Borders::ALL));
+            .block(Block::default().title(format!("[practice][{}/{}]", self.cnt + 1, self.cards.len())).borders(Borders::ALL));
         frame.render_widget(front, area);
     }
 
     fn draw_complete(&self, frame: &mut Frame<'_>, area: Rect) {
         frame.render_widget(
-            Paragraph::new("\nCompleted!\n").centered().block(Block::default().title("[Practice][Complete]").borders(Borders::ALL)),
+            Paragraph::new("\ncompleted!\n").centered().block(Block::default().title("[practice][complete]").borders(Borders::ALL)),
             area,
         );
     }
@@ -112,5 +112,5 @@ fn draw_command_bar(frame: &mut ratatui::Frame, area: Rect, mode: Mode) {
     .flat_map(|c| [c, "   "])
     .collect();
     let line = Line::from(commands.into_iter().map(Span::from).collect::<Vec<_>>());
-    frame.render_widget(Paragraph::new(line).centered().block(Block::default().title("[Commands]").borders(ratatui::widgets::Borders::ALL)), area);
+    frame.render_widget(Paragraph::new(line).centered().block(Block::default().title("[commands]").borders(ratatui::widgets::Borders::ALL)), area);
 }
