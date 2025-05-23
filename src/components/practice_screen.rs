@@ -1,3 +1,5 @@
+use std::clone;
+
 use crate::{
     action::{Action, Screen},
     models::{card::Card, deck::Deck},
@@ -6,6 +8,7 @@ use color_eyre::Result;
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Margin, Rect},
+    text::{Line, Span},
     widgets::{Block, Borders, Paragraph},
 };
 
@@ -19,6 +22,7 @@ pub struct PracticeScreen {
     mode: Mode,
 }
 
+#[derive(Clone)]
 enum Mode {
     Front,
     Back,
@@ -34,11 +38,8 @@ impl Default for PracticeScreen {
 impl PracticeScreen {
     pub fn update(&mut self, deck: &Deck, action: Action) -> Result<Option<Action>> {
         match action {
-            Action::Screen(Screen::Practice(_)) => {
-                self.cnt = 0;
-                self.mode = Mode::Front;
-                self.cards = deck.get_cards();
-            }
+            Action::Screen(Screen::Practice(_)) => self.reset(deck),
+            Action::Char('r') => self.reset(deck),
             Action::Char('c') => return Ok(Some(Action::Screen(Screen::Home))),
             Action::Char('q') => return Ok(Some(Action::Quit)),
             Action::Space => match self.mode {
@@ -51,14 +52,20 @@ impl PracticeScreen {
                         self.mode = Mode::Front;
                     }
                 }
-                Mode::Complete => return Ok(Some(Action::Screen(Screen::Home))),
+                Mode::Complete => {}
             },
             _ => {}
         }
         Ok(None)
     }
 
-    pub fn draw(&mut self, deck: &Deck, frame: &mut Frame, area: Rect) -> Result<()> {
+    fn reset(&mut self, deck: &Deck) {
+        self.cnt = 0;
+        self.mode = Mode::Front;
+        self.cards = deck.get_cards();
+    }
+
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()> {
         let card = self.cards[self.cnt].clone();
         let chunks = Layout::vertical([Constraint::Length(7), Constraint::Min(0), Constraint::Length(3)]).split(area);
         title::draw_title(frame, chunks[0])?;
@@ -67,6 +74,7 @@ impl PracticeScreen {
             Mode::Back => self.draw_back(card, frame, chunks[1]),
             Mode::Complete => self.draw_complete(frame, chunks[1]),
         };
+        draw_command_bar(frame, chunks[2], self.mode.clone());
         Ok(())
     }
 
@@ -90,4 +98,21 @@ impl PracticeScreen {
             area,
         );
     }
+}
+
+fn draw_command_bar(frame: &mut ratatui::Frame, area: Rect, mode: Mode) {
+    let commands: Vec<&str> = match mode {
+        Mode::Front => {
+            vec!["<Space> : flip", "<c> : collection"]
+        }
+        Mode::Back => {
+            vec!["<Space> : next", "<c> : collection"]
+        }
+        Mode::Complete => vec!["<r> : restart", "<c> : collection"],
+    }
+    .into_iter()
+    .flat_map(|c| [c, "   "])
+    .collect();
+    let line = Line::from(commands.into_iter().map(Span::from).collect::<Vec<_>>());
+    frame.render_widget(Paragraph::new(line).centered().block(Block::default().title("[Commands]").borders(ratatui::widgets::Borders::ALL)), area);
 }

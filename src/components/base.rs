@@ -89,7 +89,7 @@ impl Base {
     pub fn draw(&mut self, frame: &mut ratatui::Frame, area: ratatui::prelude::Rect) -> Result<()> {
         match self.screen {
             Screen::Home => self.home.draw(&self.collection, frame, area),
-            Screen::Practice(uuid) => self.practice.draw(self.collection.find_deck(uuid).unwrap(), frame, area),
+            Screen::Practice(_) => self.practice.draw(frame, area),
         }
     }
 }
