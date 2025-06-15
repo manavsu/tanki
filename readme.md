@@ -6,9 +6,9 @@ A terminal-based flashcard application written in Rust, inspired by Anki. Tanki 
 
 ## Install
 ```
-curl https://github.com/manavsu/tanki/releases/download/v0.1.0/install_tanki.sh | sh
+curl -L https://github.com/manavsu/tanki/releases/download/v0.1.0/install_tanki.sh | sh
 ```
 ## Uninstall
 ```
-curl https://github.com/manavsu/tanki/releases/download/v0.1.0/install_tanki.sh | sh
+curl -L https://github.com/manavsu/tanki/releases/download/v0.1.0/install_tanki.sh | sh
 ```
