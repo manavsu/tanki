@@ -19,10 +19,11 @@ pub fn draw_command_bar(frame: &mut ratatui::Frame, area: Rect, mode: Mode) {
                 "<a> : +deck",
                 "<D> : delete",
                 "<q> : quit",
+                "<i> : import",
             ]
         }
         Mode::Normal(None) => {
-            vec!["<Up> : up", "<Down> : down", "<a> : +deck", "<q> : quit"]
+            vec!["<Up> : up", "<Down> : down", "<a> : +deck", "<q> : quit", "<i> : import"]
         }
         Mode::InsertDeck(_, _) => vec!["<Esc> : cancel", "CR : submit"],
         Mode::InsertNote(insert_note_state) => match insert_note_state.focused_front {

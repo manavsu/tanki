@@ -1,3 +1,4 @@
+use crate::anki_importer;
 use crate::components::title;
 use std::collections::HashSet;
 
@@ -80,6 +81,16 @@ impl HomeScreen {
             }
             Action::Char('a') => {
                 self.mode = Mode::InsertDeck(collection.uuid, String::new());
+            }
+            Action::Char('i') => {
+                if let Some(path) = rfd::FileDialog::new()
+                    .add_filter("Anki Package", &["apkg"])
+                    .set_directory(dirs::download_dir().unwrap_or_else(|| std::env::home_dir().unwrap()))
+                    .pick_file()
+                {
+                    let deck = anki_importer::load_from_anki_package(path.clone());
+                    collection.add_deck(deck);
+                }
             }
             Action::Char('q') => return Ok(Some(Action::Quit)),
             Action::Char('D') => {
