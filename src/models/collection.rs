@@ -1,12 +1,9 @@
 use std::fs;
-use std::fs::File;
 use std::path::PathBuf;
 
 use serde::Deserialize;
 use serde::Serialize;
-use tempfile::tempdir;
 use uuid::Uuid;
-use zip::ZipArchive;
 
 use crate::models::deck::Deck;
 
@@ -82,8 +79,6 @@ impl Collection {
     pub fn get_all_decks(&self) -> Vec<&Deck> {
         self.decks.iter().flat_map(|d| d.get_all_subdecks()).chain(self.get_decks()).collect()
     }
-
-
 }
 
 impl Default for Collection {
