@@ -10,5 +10,5 @@ curl -L https://github.com/manavsu/tanki/releases/download/v0.1.0/install_tanki.
 ```
 ## Uninstall
 ```
-curl -L https://github.com/manavsu/tanki/releases/download/v0.1.0/install_tanki.sh | sh
+curl -L https://github.com/manavsu/tanki/releases/download/v0.1.0/uninstall_tanki.sh | sh
 ```
