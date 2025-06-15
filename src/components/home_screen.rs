@@ -90,6 +90,7 @@ impl HomeScreen {
                 {
                     let deck = anki_importer::load_from_anki_package(path.clone());
                     collection.add_deck(deck);
+                    return Ok(Some(Action::Save));
                 }
             }
             Action::Char('q') => return Ok(Some(Action::Quit)),
@@ -98,9 +99,12 @@ impl HomeScreen {
                     if let Some(selected) = self.state.selected() {
                         if let Options::DeckItem(uuid) = &self.options[selected] {
                             collection.remove_deck(*uuid);
+                            self.state.select(None);
+                            self.mode = Mode::Normal(None);
                         }
                     }
                 }
+                return Ok(Some(Action::Save));
             }
             Action::Up | Action::Down => {
                 update_list_selection(action, &mut self.state, self.num_options);
@@ -138,11 +142,14 @@ impl HomeScreen {
                 self.mode = Mode::InsertDeck(uuid, input[..input.len().saturating_sub(1)].to_string());
             }
             Action::Enter => {
-                self.mode = Mode::Normal(self.get_selected_deck(collection).map(|d| d.uuid));
                 if !input.is_empty() {
+                    self.state.select(None);
+                    self.mode = Mode::Normal(None);
                     collection.add_deck_to(uuid, Deck::new(input));
                     return Ok(Some(Action::Save));
                 }
+                self.state.select(None);
+                self.mode = Mode::Normal(None);
             }
             Action::Esc => {
                 self.mode = Mode::Normal(self.get_selected_deck(collection).map(|d| d.uuid));
@@ -212,7 +219,7 @@ impl HomeScreen {
         }
         if let Mode::InsertDeck(uuid, input) = &self.mode {
             if uuid == &parent_uuid {
-                deck_items.push(ListItem::new(Text::from(spacing + ">> " + &input.clone() + CURSOR)));
+                deck_items.push(ListItem::new(Text::from(spacing + INPUT_PROMPT + " " + &input.clone() + CURSOR)));
                 options.push(Options::AddToItem(*uuid));
             }
         }
@@ -223,7 +230,9 @@ impl HomeScreen {
         let (decks, options) = self.build_deck_list_items(collection, collection.uuid, 0);
         self.options = options;
         self.num_options = self.options.len();
-        self.select_add_item();
+        if matches!(self.mode, Mode::InsertDeck(_, _)) {
+            self.select_add_item();
+        }
 
         let chunks = Layout::vertical([Constraint::Length(7), Constraint::Min(0), Constraint::Length(3)]).split(area);
         title::draw_title(frame, chunks[0])?;
@@ -252,10 +261,10 @@ fn update_list_selection(action: Action, state: &mut ListState, num_options: usi
     }
     match action {
         Action::Up => {
-            state.select(Some(state.selected().unwrap().wrapping_sub(1)));
+            state.select(Some(if state.selected().unwrap() == 0 { num_options - 1 } else { state.selected().unwrap() - 1 }));
         }
         Action::Down => {
-            state.select(Some(state.selected().unwrap().wrapping_add(1) % num_options));
+            state.select(Some((state.selected().unwrap() + 1) % num_options));
         }
         _ => {}
     }

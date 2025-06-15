@@ -7,7 +7,7 @@ use ratatui::{
 use super::Mode;
 
 pub fn draw_command_bar(frame: &mut ratatui::Frame, area: Rect, mode: Mode) {
-    let commands: Vec<&str> = match mode {
+    let commands: Vec<&str> = match mode.clone() {
         Mode::Normal(Some(_)) => {
             vec![
                 "<Space> : expand/collapse",
